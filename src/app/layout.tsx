@@ -13,9 +13,38 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "QurbaniHat – Livestock Booking Platform",
-  description:
-    "Find and book healthy Qurbani animals in Bangladesh. Browse cows and goats from verified sellers.",
+  title: {
+    default: "QurbaniHat | Bangladesh's #1 Livestock Booking Platform",
+    template: "%s | QurbaniHat"
+  },
+  description: "Securely find and book healthy Qurbani animals in Bangladesh. Verified cows, goats, and premium breeds for a hassle-free Qurbani experience.",
+  keywords: ["Qurbani", "Livestock", "Bangladesh", "Cow", "Goat", "Marketplace", "Booking"],
+  authors: [{ name: "QurbaniHat Team" }],
+  openGraph: {
+    type: "website",
+    locale: "en_BD",
+    url: "https://qurbanihat-ej.vercel.app",
+    siteName: "QurbaniHat",
+    title: "QurbaniHat | Premium Qurbani Livestock Booking",
+    description: "The most trusted platform to find healthy, verified Qurbani animals in Bangladesh. Browse cows and goats today.",
+    images: [
+      {
+        url: "/img/animal_1.webp",
+        width: 1200,
+        height: 630,
+        alt: "QurbaniHat Livestock",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "QurbaniHat | Premium Qurbani Livestock",
+    description: "Find your perfect Qurbani animal with ease. Verified sellers, healthy livestock.",
+    images: ["/img/animal_1.webp"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+  }
 };
 
 export default function RootLayout({
