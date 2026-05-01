@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     images: ["/img/animal_1.webp"],
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: "/svg.svg",
   }
 };
 
