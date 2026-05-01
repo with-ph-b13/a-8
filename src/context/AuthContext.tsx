@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { DEFAULT_AVATARS } from "@/data/avatars";
 
 // Simple user type
 export type User = {
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const newUser: User = {
       name,
       email,
-      image: image || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + email,
+      image: image || DEFAULT_AVATARS[0].url,
     };
     accounts[email] = { password, user: newUser };
     saveAccounts(accounts);
