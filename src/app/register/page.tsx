@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-toastify";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") || "/";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -22,7 +24,7 @@ export default function RegisterPage() {
     try {
       await signUp(name, email, photoUrl, password);
       toast.success("Account created! Please login.");
-      router.push("/login");
+      router.push(returnTo !== "/" ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Registration failed.";
       toast.error(message);
@@ -35,7 +37,7 @@ export default function RegisterPage() {
     try {
       await signInWithGoogle();
       toast.success("Logged in with Google!");
-      router.push("/");
+      router.push(returnTo);
     } catch {
       toast.error("Google login failed. Please try again.");
     }
@@ -136,11 +138,26 @@ export default function RegisterPage() {
         {/* Login link */}
         <p className="text-center text-sm text-gray-500 mt-6">
           Already have an account?{" "}
-          <Link href="/login" className="text-green-700 font-semibold hover:underline">
+          <Link 
+            href={returnTo !== "/" ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"} 
+            className="text-green-700 font-semibold hover:underline"
+          >
             Login here
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

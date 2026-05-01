@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-toastify";
 
-export default function LoginPage() {
+function LoginForm() {
   const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo") || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +22,7 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       toast.success("Welcome back! Logged in successfully.");
-      router.push("/");
+      router.push(returnTo);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed.";
       toast.error(message);
@@ -33,7 +35,7 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
       toast.success("Logged in with Google!");
-      router.push("/");
+      router.push(returnTo);
     } catch {
       toast.error("Google login failed. Please try again.");
     }
@@ -107,12 +109,27 @@ export default function LoginPage() {
         {/* Register link */}
         <p className="text-center text-sm text-gray-500 mt-6">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-green-700 font-semibold hover:underline">
+          <Link 
+            href={returnTo !== "/" ? `/register?returnTo=${encodeURIComponent(returnTo)}` : "/register"} 
+            className="text-green-700 font-semibold hover:underline"
+          >
             Register here
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
 // Google Login integrated
