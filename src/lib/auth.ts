@@ -8,6 +8,7 @@ const createAuth = async () => {
   if (!uri) {
     // Return a basic instance for build time if URI is missing
     return betterAuth({
+      secret: process.env.BETTER_AUTH_SECRET,
       emailAndPassword: { enabled: true },
       socialProviders: {
         google: {
@@ -22,6 +23,7 @@ const createAuth = async () => {
   const db = client.db();
 
   return betterAuth({
+    secret: process.env.BETTER_AUTH_SECRET,
     database: mongodbAdapter(db, {
       client: client,
     }),
@@ -41,5 +43,6 @@ const createAuth = async () => {
     },
   });
 };
+
 
 export const auth = await createAuth();
