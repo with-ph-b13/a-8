@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import { DEFAULT_AVATARS } from "@/data/avatars";
 
 // Simple user type
@@ -15,104 +16,83 @@ type AuthContextType = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (name: string, email: string, image: string, password: string) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  updateUserProfile: (name: string, image: string) => void;
+  updateUserProfile: (name: string, image: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const session = authClient.useSession();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage on start
   useEffect(() => {
-    const saved = localStorage.getItem("qurbanihat_user");
-    if (saved) {
-      setUser(JSON.parse(saved));
-    }
-    setLoading(false);
-  }, []);
-
-  // Save user to localStorage whenever it changes
-  const saveUser = (u: User | null) => {
-    setUser(u);
-    if (u) {
-      localStorage.setItem("qurbanihat_user", JSON.stringify(u));
+    if (session.data?.user) {
+      setUser({
+        name: session.data.user.name,
+        email: session.data.user.email,
+        image: session.data.user.image || "",
+      });
     } else {
-      localStorage.removeItem("qurbanihat_user");
+      setUser(null);
     }
-  };
-
-  // Get stored accounts
-  const getAccounts = (): Record<string, { password: string; user: User }> => {
-    const stored = localStorage.getItem("qurbanihat_accounts");
-    return stored ? JSON.parse(stored) : {};
-  };
-
-  const saveAccounts = (accounts: Record<string, { password: string; user: User }>) => {
-    localStorage.setItem("qurbanihat_accounts", JSON.stringify(accounts));
-  };
+  }, [session.data]);
 
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
-    const accounts = getAccounts();
-    const account = accounts[email];
-    if (!account || account.password !== password) {
-      throw new Error("Invalid email or password. Please try again.");
-    }
-    saveUser(account.user);
+    const { error } = await authClient.signIn.email({
+      email,
+      password,
+    });
+    if (error) throw new Error(error.message || "Failed to sign in");
   };
 
   // Register a new account
   const signUp = async (name: string, email: string, image: string, password: string) => {
-    const accounts = getAccounts();
-    if (accounts[email]) {
-      throw new Error("An account with this email already exists.");
-    }
-    const newUser: User = {
-      name,
+    const { error } = await authClient.signUp.email({
       email,
+      password,
+      name,
       image: image || DEFAULT_AVATARS[0].url,
-    };
-    accounts[email] = { password, user: newUser };
-    saveAccounts(accounts);
-    // Do not auto-login, redirect to login page
+    });
+    if (error) throw new Error(error.message || "Failed to sign up");
   };
+
 
   // Sign out
-  const signOut = () => {
-    saveUser(null);
+  const signOut = async () => {
+    await authClient.signOut();
   };
 
-  // Google sign in (mock - stores a demo Google user)
+  // Google sign in
   const signInWithGoogle = async () => {
-    const googleUser: User = {
-      name: "Google User",
-      email: "googleuser@gmail.com",
-      image: "https://api.dicebear.com/7.x/avataaars/svg?seed=google",
-    };
-    saveUser(googleUser);
+    const { error } = await authClient.signIn.social({
+      provider: "google",
+    });
+    if (error) throw new Error(error.message || "Failed to sign in with Google");
   };
 
   // Update name and photo
-  const updateUserProfile = (name: string, image: string) => {
-    if (!user) return;
-    const updatedUser: User = { ...user, name, image };
-    saveUser(updatedUser);
-
-    // Also update in accounts storage
-    const accounts = getAccounts();
-    if (accounts[user.email]) {
-      accounts[user.email].user = updatedUser;
-      saveAccounts(accounts);
-    }
+  const updateUserProfile = async (name: string, image: string) => {
+    const { error } = await authClient.updateUser({
+      name,
+      image,
+    });
+    if (error) throw new Error(error.message || "Failed to update profile");
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signIn, signUp, signOut, signInWithGoogle, updateUserProfile }}
+      value={{
+        user,
+        loading: session.isPending,
+        signIn,
+        signUp,
+        signOut,
+        signInWithGoogle,
+        updateUserProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -125,3 +105,4 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 }
+
