@@ -17,11 +17,6 @@ const createAuth = async () => {
         clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       },
     },
-    user: {
-      additionalFields: {
-        image: { type: "string", required: false },
-      },
-    },
   };
 
   if (!uri || isBuild) {
