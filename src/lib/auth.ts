@@ -4,32 +4,13 @@ import clientPromise from "./mongodb";
 
 const createAuth = async () => {
   const uri = process.env.MONGODB_URI;
+  const isBuild = process.env.NEXT_PHASE === "phase-production-build";
   
-  if (!uri) {
-    // Return a basic instance for build time if URI is missing
-    return betterAuth({
-      secret: process.env.BETTER_AUTH_SECRET,
-      emailAndPassword: { enabled: true },
-      socialProviders: {
-        google: {
-          clientId: process.env.GOOGLE_CLIENT_ID || "placeholder",
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET || "placeholder",
-        },
-      },
-    });
-  }
-
-  const client = await clientPromise;
-  const db = client.db();
-
-  return betterAuth({
+  // Base configuration shared between build and runtime
+  const baseConfig = {
     secret: process.env.BETTER_AUTH_SECRET,
-    database: mongodbAdapter(db, {
-      client: client,
-    }),
-    emailAndPassword: {
-      enabled: true,
-    },
+    baseURL: process.env.BETTER_AUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
+    emailAndPassword: { enabled: true },
     socialProviders: {
       google: {
         clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -41,8 +22,27 @@ const createAuth = async () => {
         image: { type: "string", required: false },
       },
     },
-  });
-};
+  };
 
+  if (!uri || isBuild) {
+    // Return a basic instance for build time or if URI is missing
+    return betterAuth(baseConfig);
+  }
+
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+
+    return betterAuth({
+      ...baseConfig,
+      database: mongodbAdapter(db, {
+        client: client,
+      }),
+    });
+  } catch (error) {
+    console.error("Failed to connect to MongoDB for Auth:", error);
+    return betterAuth(baseConfig);
+  }
+};
 
 export const auth = await createAuth();

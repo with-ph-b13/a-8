@@ -1,19 +1,22 @@
 import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
+const isBuild = process.env.NEXT_PHASE === "phase-production-build";
 const options = {};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-if (!uri) {
-  if (process.env.NODE_ENV === "production") {
-    // In production (like Vercel build), we don't want to throw at top level 
-    // unless the DB is actually accessed.
-    clientPromise = Promise.reject(new Error('Invalid/Missing environment variable: "MONGODB_URI"'));
-  } else {
-    throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
-  }
+if (!uri || isBuild) {
+  // During build or if URI is missing, we don't connect.
+  // We return a promise that will only reject if actually awaited.
+  clientPromise = new Promise((_, reject) => {
+    if (!uri && !isBuild) {
+      reject(new Error('Invalid/Missing environment variable: "MONGODB_URI"'));
+    } else {
+      reject(new Error('MongoDB connection is disabled during build phase.'));
+    }
+  });
 } else {
   if (process.env.NODE_ENV === "development") {
     let globalWithMongo = global as typeof globalThis & {
