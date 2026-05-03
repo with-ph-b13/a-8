@@ -2,29 +2,44 @@ import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import clientPromise from "./mongodb";
 
-const client = await clientPromise;
-const db = client.db();
+const createAuth = async () => {
+  const uri = process.env.MONGODB_URI;
+  
+  if (!uri) {
+    // Return a basic instance for build time if URI is missing
+    return betterAuth({
+      emailAndPassword: { enabled: true },
+      socialProviders: {
+        google: {
+          clientId: process.env.GOOGLE_CLIENT_ID || "placeholder",
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET || "placeholder",
+        },
+      },
+    });
+  }
 
-export const auth = betterAuth({
-  database: mongodbAdapter(db, {
-    client: client,
-  }),
-  emailAndPassword: {
-    enabled: true,
-  },
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+  const client = await clientPromise;
+  const db = client.db();
+
+  return betterAuth({
+    database: mongodbAdapter(db, {
+      client: client,
+    }),
+    emailAndPassword: {
+      enabled: true,
     },
-  },
-  // Ensure we support image and name updates as requested in plan.md
-  user: {
-    additionalFields: {
-      image: {
-        type: "string",
-        required: false,
+    socialProviders: {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID as string,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       },
     },
-  },
-});
+    user: {
+      additionalFields: {
+        image: { type: "string", required: false },
+      },
+    },
+  });
+};
+
+export const auth = await createAuth();
